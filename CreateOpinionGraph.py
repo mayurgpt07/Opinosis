@@ -14,6 +14,7 @@ reviews.close()
 
 dict_word = {}
 stop_words = set(stopwords.words('english'))
+# print(stop_words)
 for word in combinedSentences.split(' '):
     if word not in stop_words:
         if word in list(dict_word.keys()):
@@ -44,11 +45,35 @@ print(nx.info(G))
 # nx.draw(G, node_size = 8, font_size = 10, labels = dict_word)
 # plt.show()
 reviews.close()
-
 keys = list(weight_dict.keys())
 
 for key in keys:
     G[key[0]][key[1]]['weight'] = int(weight_dict[key])
 
-print(sorted_word_dictionary)
+# print(G['being']['able']['weight'])
+# print(sorted_word_dictionary)
 
+def aggregate_weights(G, path):
+    return sum([G[i][i + 1]['weight'] for i in range(len(path) - 2)])
+
+print(nx.dijkstra_path(G, 'being', 'font'))
+
+initialNode = 'different'
+maxWeight = -1
+node = ''
+finalString = initialNode
+lengthOfReviews = 10
+
+while lengthOfReviews > 0 and node != '.':
+    print(node)
+    for neighbor in G.neighbors(initialNode):
+        weight = G[initialNode][neighbor]['weight']
+        if weight > maxWeight:
+            maxWeight = weight
+            node = neighbor
+    finalString = finalString + ' ' + node
+    maxWeight = -1
+    initialNode = node
+    lengthOfReviews = lengthOfReviews - 1
+
+print('Final Summary: ', finalString)
