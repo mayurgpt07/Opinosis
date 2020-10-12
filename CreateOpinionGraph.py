@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import re
 from nltk.corpus import stopwords
 
-reviews = open("./opinosis-summarization/sample_data/kindle.txt","r")
+reviews = open("./opinosis-summarization/sample_data/toyota_camry.txt","r")
 allText = reviews.read()
 combinedSentences = allText.lower().strip().replace('\n', ' ').replace('\r', '')
 combinedSentences = re.sub("[^a-zA-Z]", " ", combinedSentences)
@@ -24,7 +24,7 @@ for word in combinedSentences.split(' '):
 
 sorted_word_dictionary = {k: v for k, v in sorted(dict_word.items(), key=lambda item: item[1])}
 
-reviews = open("./opinosis-summarization/sample_data/kindle.txt","r")
+reviews = open("./opinosis-summarization/sample_data/toyota_camry.txt","r")
 allText = reviews.read()
 allSentence = allText.lower().split('\n')
 
@@ -56,16 +56,14 @@ for key in keys:
 def aggregate_weights(G, path):
     return sum([G[i][i + 1]['weight'] for i in range(len(path) - 2)])
 
-print(nx.dijkstra_path(G, 'being', 'font'))
 
-initialNode = 'different'
+initialNode = 'toyota'
 maxWeight = -1
 node = ''
 finalString = initialNode
 lengthOfReviews = 10
 
 while lengthOfReviews > 0 and node != '.':
-    print(node)
     for neighbor in G.neighbors(initialNode):
         weight = G[initialNode][neighbor]['weight']
         if weight > maxWeight:
