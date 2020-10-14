@@ -24,7 +24,7 @@ combinedSentences = allText.lower().strip().replace('\n', ' ').replace('\r', '')
 # Remove all uncessary characters and digits
 combinedSentences = re.sub("[^a-zA-Z]", " ", combinedSentences)
 combinedSentences = combinedSentences.strip()
-
+# print(combinedSentences)
 # Create another copy of initial review set for the graph
 allText = allText.lower().strip().replace('\n', ' ').replace('\r', '')
 uniqueWords = list(set(allText.split(' ')))
@@ -52,6 +52,26 @@ Directed graphs allow traversal that supports the language used to write the rev
 reviews = open(fileName,"r")
 allText = reviews.read()
 allSentence = allText.lower().split('\n')
+
+## Creating function to get the average starting position of word
+def average(avgList):
+    return sum(avgList)/len(avgList)
+
+def getAveragePosition(sorted_word_dictionary, allSentence):
+    startingWordList = list(sorted_word_dictionary.keys())
+    eachWordAvg = []
+    wordAveragePosition = {}
+    for eachWord in startingWordList:
+        for eachSentence in allSentence:
+            index = eachSentence.lower().strip().replace('\n', ' ').replace('\r', '').find(eachWord)
+            if index != -1:
+                eachWordAvg.append(index + 1)
+        wordAveragePosition[eachWord] = average(eachWordAvg)
+        eachWordAvg.clear()
+    return wordAveragePosition
+      
+wordAveragePosition = getAveragePosition(sorted_word_dictionary, allSentence)
+wordAveragePosition = {k: v for k, v in sorted(wordAveragePosition.items(), key=lambda item: item[1])}
 
 # Create directed graph
 G = nx.DiGraph()
@@ -115,7 +135,7 @@ The review either is of selected length or until it encounters a full stop (.)
 
 '''
 
-initialNode = top_n[9]
+initialNode = 'light'#top_n[9]
 maxWeight = -1
 node = ''
 finalString = initialNode
