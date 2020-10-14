@@ -9,6 +9,11 @@ import numpy as np
 
 fileName = "./opinosis-summarization/sample_data/kindle.txt" 
 
+## Get the main points using nouns
+## Filter starting position list using pos
+## Try to derive paths that must go through a word (and then find the most weighted amongst it)
+## Use opionosis method as well
+
 '''
 Read the reviews to create two variables that can be used to create the graph and most occuring word dictionary
 Graph contains all the words, digits and characters
@@ -72,7 +77,7 @@ def getAveragePosition(sorted_word_dictionary, allSentence):
       
 wordAveragePosition = getAveragePosition(sorted_word_dictionary, allSentence)
 wordAveragePosition = {k: v for k, v in sorted(wordAveragePosition.items(), key=lambda item: item[1])}
-
+# print(wordAveragePosition)
 # Create directed graph
 G = nx.DiGraph()
 G.add_nodes_from(uniqueWords)
@@ -93,7 +98,7 @@ for sentence in allSentence:
 
 reviews.close()
 
-print(pos_tag_sentence[0])
+# print(pos_tag_sentence[0])
 keys = list(weight_dict.keys())
 
 # Set the weights to edges between words
@@ -116,17 +121,22 @@ eachReview = list(map(removeNewLine, eachReview))
 vectorizer = TfidfVectorizer(stop_words = 'english', sublinear_tf = True)
 tfidfVector = vectorizer.fit_transform(eachReview)
 
-tfidf_score = list(tfidfVector[0].toarray()[0])
+tfidf = tfidfVector.todense()
+tfidf[tfidf == 0] = np.nan
+means = np.nanmean(tfidf, axis=0)
+means = dict(zip(vectorizer.get_feature_names(), means.tolist()[0]))
 
+tfidf = tfidfVector.todense()
+ordered = np.argsort(tfidf*-1)
 words = vectorizer.get_feature_names()
 
-feature_array = np.array(words)
-tfidf_sorting = np.argsort(tfidfVector.toarray()).flatten()[::-1]
-
-# Get the top n words based on descending order of tfidf score
-n = 10
-top_n = feature_array[tfidf_sorting][:n]
-print(top_n)
+global_average_score = {}
+top_k = 200
+for i, doc in enumerate(eachReview):
+    result = { }
+    for t in range(top_k):
+        result[words[ordered[i,t]]] = means[words[ordered[i,t]]]
+        
 
 '''
 Create summary reviews using graph and TF-IDF
@@ -135,7 +145,7 @@ The review either is of selected length or until it encounters a full stop (.)
 
 '''
 
-initialNode = 'light'#top_n[9]
+initialNode = 'orientation'#top_n[9]
 maxWeight = -1
 node = ''
 finalString = initialNode
