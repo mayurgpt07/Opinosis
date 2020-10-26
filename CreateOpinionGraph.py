@@ -6,6 +6,7 @@ from nltk.tokenize import word_tokenize
 from nltk import pos_tag
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
+import heapq
 
 ## Creating function to get the average starting position of word
 def average(avgList):
@@ -26,7 +27,7 @@ def getAveragePosition(uniqueWords, allSentence):
     return wordNumber, wordAveragePosition
 
 
-fileName = "./opinosis-summarization/sample_data/toyota_camry.txt"
+fileName = "./opinosis-summarization/sample_data/kindle.txt"
 
 ## Get the main points using nouns
 ## Filter starting position list using pos
@@ -70,14 +71,14 @@ reviews = open(fileName,"r")
 allText = reviews.read()
 
 # Remove next line character and breaklines fro reviews
-combinedSentences = allText.lower().strip().replace('\n', ' ').replace('\r', '')
+combinedSentences = allText.lower().strip().replace('\n', ' ').replace('\r', '').replace(',', '')
 
 # Remove all uncessary characters and digits
 combinedSentences = re.sub("[^a-zA-Z]", " ", combinedSentences)
 combinedSentences = combinedSentences.strip()
 # print(combinedSentences)
 # Create another copy of initial review set for the graph
-allText = allText.lower().strip().replace('\n', ' ').replace('\r', '')
+allText = allText.lower().strip().replace('\n', ' ').replace('\r', '').replace(',', '')
 allText = ' '.join([contraction_mapping[t] if t in contraction_mapping else t for t in allText.split(" ")]) 
 # print(allText)
 
@@ -105,7 +106,7 @@ Directed graphs allow traversal that supports the language used to write the rev
 '''
 reviews = open(fileName,"r")
 allText = reviews.read()
-allSentence = allText.lower().split('\n')
+allSentence = allText.lower().replace(',', '').split('\n')
 
 resolveShortForm = lambda x: ' '.join([contraction_mapping[t] if t in contraction_mapping else t for t in x.split(" ")])
 allSentence = list(map(resolveShortForm, allSentence))
@@ -113,7 +114,7 @@ wordNumber, wordAveragePosition = getAveragePosition(uniqueWords, allSentence)
 
 
 wordAveragePosition = {k: v for k, v in sorted(wordAveragePosition.items(), key=lambda item: item[1])}
-print(wordAveragePosition)
+# print(wordAveragePosition)
 
 # Create directed graph
 G = nx.DiGraph()
@@ -126,7 +127,7 @@ pos_tag_sentence = []
 weight_dict = {}
 for sentence in allSentence:
     pos_tag_sentence.append(pos_tag(word_tokenize(sentence.lower().strip().replace('\n', ' ').replace('\r', ''))))
-    allWordsinSentence = sentence.lower().strip().replace('\n', ' ').replace('\r', '').split(' ')
+    allWordsinSentence = sentence.lower().strip().replace('\n', ' ').replace('\r', '').replace(',', '').split(' ')
     for i in range(len(allWordsinSentence)-1):
         tup = (allWordsinSentence[i], allWordsinSentence[i+1])
         G.add_edge(allWordsinSentence[i], allWordsinSentence[i+1])
@@ -144,6 +145,24 @@ keys = list(weight_dict.keys())
 for key in keys:
     G[key[0]][key[1]]['weight'] = int(weight_dict[key])
 
+# Add a dictionary for gathering postional values
+postion_dictionary = {}
+
+for word in uniqueWords:
+    for j in range(0, len(allSentence)):
+        allWordsinSentence = allSentence[j].lower().strip().replace('\n', ' ').replace('\r', '').replace(',', '').split(' ')
+        try:
+            word_index = int(allWordsinSentence.index(word))
+        except:
+            word_index = -1
+        if word_index >= 0:
+            if word in list(postion_dictionary.keys()):
+                postion_dictionary[word].append((j,word_index)) 
+            else:
+                postion_dictionary[word] = [(j, word_index)]
+        
+
+print(postion_dictionary)
 
 '''
 Use TF-IDF to find the most important set of words in the reviews
@@ -187,24 +206,35 @@ Select the starting word (must be in vocabulary) and the length of reviews
 The review either is of selected length or until it encounters a full stop (.)
 
 '''
+threshold = 3
+startingPoint = []
 
-initialNode = 'appears'#top_n[9]
-# print(wordNumber[initialNode])
-maxWeight = -1
-node = ''
-finalString = initialNode
-lengthOfReviews = 10
+for key, value in wordAveragePosition.items():
+    if value <= threshold:
+        startingPoint.append(key) 
 
-# Create summary review using max weight graph traversal (most common words coming after each other) 
-while lengthOfReviews > 0 and (node != '.' and node != '!'):
-    for neighbor in G.neighbors(initialNode):
-        weight = G[initialNode][neighbor]['weight']
-        if weight > maxWeight:
-            maxWeight = weight
-            node = neighbor
-    finalString = finalString + ' ' + node
+# print(startingPoint)
+
+for start in startingPoint:
+    initialNode = start#top_n[9]
+    # print(wordNumber[initialNode])
     maxWeight = -1
-    initialNode = node
-    lengthOfReviews = lengthOfReviews - 1
+    node = ''
+    finalString = initialNode
+    lengthOfReviews = 10
 
-print('Final Summary: ', finalString)
+    # Create summary review using max weight graph traversal (most common words coming after each other) 
+    while lengthOfReviews > 0 and (node != '.' and node != '!'):
+        for neighbor in G.neighbors(initialNode):
+            weight = G[initialNode][neighbor]['weight']
+            if weight > maxWeight:
+                maxWeight = weight
+                node = neighbor
+        finalString = finalString + ' ' + node
+        maxWeight = -1
+        initialNode = node
+        lengthOfReviews = lengthOfReviews - 1
+
+    # print('Final Summary: ', finalString)
+
+# print(pos_tag_sentence)
